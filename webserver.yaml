@@ -1,0 +1,38 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Serverpack
+Parameters:
+  InstanceType:
+    Description: ingyervan
+    Type: String
+    Default: t2.micro
+  ertelmesloadbalancer:
+    Description: Betoltesegyensulyozo
+    Type: String
+  Kepisecurity:
+    Description: Kalmar Adatvedelmi kft
+    Type: String
+  ImageId:
+    Type: String
+  UserData:
+    Type: String
+Resources:
+ Webserver:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AvailabilityZones:
+        - eu-central-1a
+        - eu-central-1b
+        - eu-central-1c
+      LaunchConfigurationName: !Ref 'LaunchConfig'
+      MinSize: '1'
+      MaxSize: '1'
+      LoadBalancerNames: [!Ref 'ertelmesloadbalancer']
+ LaunchConfig:
+   Type: AWS::AutoScaling::LaunchConfiguration
+   Properties:
+     ImageId: !Ref 'ImageId'
+     InstanceType: !Ref 'InstanceType'
+     SecurityGroups:
+       - !Ref Kepisecurity
+     UserData:
+       Fn::Base64: !Ref 'UserData'

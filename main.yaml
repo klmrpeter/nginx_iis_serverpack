@@ -1,0 +1,124 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Serverpack
+Parameters:
+  ExportStackName:
+    Description: The name of the stack that exports the values
+    Type: String
+  VPC:
+    Description: VPC to launch virtual server in
+    Type: AWS::EC2::VPC::Id
+  Subnet:
+    Description: subnet to launch virtual server in
+    Type: AWS::EC2::Subnet::Id
+  InstanceType:
+    Description: nginx/iis server
+    Type: String
+    Default: t2.micro
+  UbuntuImageId:
+    Type: String
+    Default: "ami-0b418580298265d5c"
+  UbuntuUD:
+    Type: String
+    Default: |
+       #!/bin/bash
+       sudo apt update
+       sudo apt install nginx -y
+       sudo apt install curl -y
+  RedHatImageId:
+    Type: String
+    Default: "ami-0badcc5b522737046"
+  RedHatUD:
+    Type: String
+    Default: |
+       #!/bin/bash
+       sudo yum update
+       sudo yum install nginx -y
+       sudo yum install curl -y
+       sudo systemctl start nginx
+       sudo systemctl enable nginx
+  Win10ImageId:
+    Type: String
+    Default: "ami-0e0564dc8e882f217"
+  Win10UD:
+    Type: String
+    Default: |
+       <powershell>
+       Add-WindowsFeature Web-Server
+       Invoke-WebRequest -UseBasicParsing -Uri 'https://dotnetbinaries.blob.core.windows.net/servicemonitor/2.0.1.6/ServiceMonitor.exe' -OutFile 'C:\\ServiceMonitor.exe'
+       echo '<html><body><br/><br/><marquee><H1>Hello EKS!!!<H1><marquee></body><html>' > C:\\inetpub\\wwwroot\\default.html
+       C:\\ServiceMonitor.exe 'w3svc'
+       </powershell>
+Resources:
+  Kepisecurity:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow Web Traffic to Instance
+      VpcId:
+        Ref: VPC
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+        CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+      - IpProtocol: "-1"
+        FromPort: "-1"
+        ToPort: "-1"
+        CidrIp: 0.0.0.0/0
+  ertelmesloadbalancer:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      AvailabilityZones:
+        - eu-central-1a
+        - eu-central-1b
+        - eu-central-1c
+      CrossZone: 'true'
+      SecurityGroups:
+        - !Ref Kepisecurity
+      Listeners:
+      - LoadBalancerPort: '80'
+        InstancePort: '80'
+        Protocol: HTTP
+      HealthCheck:
+        Target: HTTP:80/
+        HealthyThreshold: '3'
+        UnhealthyThreshold: '5'
+        Interval: '10'
+        Timeout: '5'
+  Ubuntu:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://childstack.s3.eu-central-1.amazonaws.com/webserver2.yaml
+      Parameters:
+        ertelmesloadbalancer: !Ref 'ertelmesloadbalancer'
+        Kepisecurity: !Ref 'Kepisecurity'
+        ImageId: !Ref 'UbuntuImageId'
+        UserData: !Ref 'UbuntuUD'
+  RedHat:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://childstack.s3.eu-central-1.amazonaws.com/webserver2.yaml
+      Parameters:
+        ertelmesloadbalancer: !Ref 'ertelmesloadbalancer'
+        Kepisecurity: !Ref 'Kepisecurity'
+        ImageId: !Ref 'RedHatImageId'
+        UserData: !Ref 'RedHatUD'
+  Win10:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://childstack.s3.eu-central-1.amazonaws.com/webserver2.yaml
+      Parameters:
+        ertelmesloadbalancer: !Ref 'ertelmesloadbalancer'
+        Kepisecurity: !Ref 'Kepisecurity'
+        ImageId: !Ref 'Win10ImageId'
+        UserData: !Ref 'Win10UD'
+Outputs:
+  LoadBalancer:
+    Value: !GetAtt ertelmesloadbalancer.DNSName
+    Description: ID of ertelmesloadbalancer
+    Export:
+      Name: !Sub ${AWS::StackName}-ertelmesloadbalancer
