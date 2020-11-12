@@ -49,7 +49,7 @@ Parameters:
        C:\\ServiceMonitor.exe 'w3svc'
        </powershell>
 Resources:
-  Kepisecurity:
+  SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow Web Traffic to Instance
@@ -69,7 +69,7 @@ Resources:
         FromPort: "-1"
         ToPort: "-1"
         CidrIp: 0.0.0.0/0
-  ertelmesloadbalancer:
+  LoadBalancer:
     Type: AWS::ElasticLoadBalancing::LoadBalancer
     Properties:
       AvailabilityZones:
@@ -78,7 +78,7 @@ Resources:
         - eu-central-1c
       CrossZone: 'true'
       SecurityGroups:
-        - !Ref Kepisecurity
+        - !Ref SecurityGroup
       Listeners:
       - LoadBalancerPort: '80'
         InstancePort: '80'
@@ -92,33 +92,33 @@ Resources:
   Ubuntu:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://childstack.s3.eu-central-1.amazonaws.com/webserver2.yaml
+      TemplateURL: https://childstack.s3.eu-central-1.amazonaws.com/webserver.yaml
       Parameters:
-        ertelmesloadbalancer: !Ref 'ertelmesloadbalancer'
-        Kepisecurity: !Ref 'Kepisecurity'
+        LoadBalancer: !Ref 'LoadBalancer'
+        SecurityGroup: !Ref 'SecurityGroup'
         ImageId: !Ref 'UbuntuImageId'
         UserData: !Ref 'UbuntuUD'
   RedHat:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://childstack.s3.eu-central-1.amazonaws.com/webserver2.yaml
+      TemplateURL: https://childstack.s3.eu-central-1.amazonaws.com/webserver.yaml
       Parameters:
-        ertelmesloadbalancer: !Ref 'ertelmesloadbalancer'
-        Kepisecurity: !Ref 'Kepisecurity'
+        LoadBalancer: !Ref 'LoadBalancer'
+        SecurityGroup: !Ref 'SecurityGroup'
         ImageId: !Ref 'RedHatImageId'
         UserData: !Ref 'RedHatUD'
   Win10:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://childstack.s3.eu-central-1.amazonaws.com/webserver2.yaml
+      TemplateURL: https://childstack.s3.eu-central-1.amazonaws.com/webserver.yaml
       Parameters:
-        ertelmesloadbalancer: !Ref 'ertelmesloadbalancer'
-        Kepisecurity: !Ref 'Kepisecurity'
+        LoadBalancer: !Ref 'LoadBalancer'
+        SecurityGroup: !Ref 'SecurityGroup'
         ImageId: !Ref 'Win10ImageId'
         UserData: !Ref 'Win10UD'
 Outputs:
   LoadBalancer:
-    Value: !GetAtt ertelmesloadbalancer.DNSName
-    Description: ID of ertelmesloadbalancer
+    Value: !GetAtt LoadBalancer.DNSName
+    Description: ID of LoadBalancer
     Export:
-      Name: !Sub ${AWS::StackName}-ertelmesloadbalancer
+      Name: !Sub ${AWS::StackName}-LoadBalancer
