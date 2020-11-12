@@ -2,14 +2,13 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Serverpack
 Parameters:
   InstanceType:
-    Description: ingyervan
     Type: String
     Default: t2.micro
-  ertelmesloadbalancer:
-    Description: Betoltesegyensulyozo
+  LoadBalancer:
+    Description: Serverpack LoadBalancer
     Type: String
-  Kepisecurity:
-    Description: Kalmar Adatvedelmi kft
+  SecurityGroup:
+    Description: Serverpack SecurityGroup
     Type: String
   ImageId:
     Type: String
@@ -26,13 +25,13 @@ Resources:
       LaunchConfigurationName: !Ref 'LaunchConfig'
       MinSize: '1'
       MaxSize: '1'
-      LoadBalancerNames: [!Ref 'ertelmesloadbalancer']
+      LoadBalancerNames: [!Ref 'LoadBalancer']
  LaunchConfig:
    Type: AWS::AutoScaling::LaunchConfiguration
    Properties:
      ImageId: !Ref 'ImageId'
      InstanceType: !Ref 'InstanceType'
      SecurityGroups:
-       - !Ref Kepisecurity
+       - !Ref SecurityGroup
      UserData:
        Fn::Base64: !Ref 'UserData'
